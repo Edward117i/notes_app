@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar nota</title>
+</head>
+<body>
+    <h1>Editar nota</h1>
+    <form method="POST">
+        <label for="title">Titulo</label>
+        <input type="text" name="title" id="title" value="{{ note.title }}">
+        <br>
+        <label for="content">Contenido</label>
+        <input type="text" name="content" id="content" value="{{ note.content }}">
+        <br>
+        <input type="submit" value="Guardar Nota"> 
+    </form>
+</body>
+</html>
