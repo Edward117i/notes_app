@@ -79,3 +79,15 @@ def edit_note(id):
         return redirect(url_for('home'))
     
     return render_template('edit_form.html', note=note)
+
+@app.route("/eliminar-nota/<int:id>", methods=['GET', 'POST'])
+def delete_note(id):
+    note = Note.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        db.session.delete(note)
+        db.session.commit()
+        
+        return redirect(url_for('home'))
+    
+    return render_template('delete_form.html', note=note)
