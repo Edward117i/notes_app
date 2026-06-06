@@ -47,8 +47,8 @@
                     <td>{{ note.content }}</td>
                     <td>
                         <div class="acciones">
-                            <a href="{{ url_for('edit_note', id=note.id) }}">✏️Editar</a>
-                            <form action="{{ url_for('delete_note', id=note.id) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta nota?');">
+                            <a href="{{ url_for('notes.edit_note', id=note.id) }}">✏️Editar</a>
+                            <form action="{{ url_for('notes.delete_note', id=note.id) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta nota?');">
                                 <button type="submit">🗑️Eliminar</button>
                             </form>
                         </div>
@@ -62,6 +62,6 @@
             </tbody>
         </table>
         <br>
-        <a href="{{ url_for('create_note') }}">➕Crear una nueva nota</a>
+        <a href="{{ url_for('notes.create_note') }}">➕Crear una nueva nota</a>
 </body>
 </html>
