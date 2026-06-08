@@ -22,10 +22,16 @@
     <nav class="sticky top-0 z-50 bg-white shadow-sm py-4">
         <div class="container mx-auto flex justify-between items-center px-4">
             <a href="{{ url_for('notes.home') }}" class="text-xl font-bold text-gray-800">Notas App</a>
-            {% if request.endpoint not in ['notes.create_note', 'notes.edit_note'] %}
-            <a href="{{ url_for('notes.create_note') }}"
-                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Crear Nota</a>
-            {% endif %}
+            <div class="flex items-center space-x-3">
+                {% if request.endpoint not in ['notes.create_note', 'notes.edit_note', 'auth.login'] %}
+                <a href="{{ url_for('notes.create_note') }}"
+                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">Crear Nota</a>
+                {% endif %}
+                {% if session.get('user') %}
+                <a href="{{ url_for('auth.logout') }}"
+                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition">Cerrar Sesión</a>
+                {% endif %}
+            </div>
         </div>
     </nav>
 
