@@ -14,13 +14,16 @@ class Config:
     SECRET_KEY ="this-is-not-secret"
 
 class TestConfig:
-    SQLALCHEMY_DATABASE_URI = "sqlite:///test_notes.db"
+    """Configuración para pruebas unitarias"""
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"  # Base de datos en memoria para pruebas más rápidas
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "connect_args": {"timeout": 15, "check_same_thread": False},
         "pool_recycle": 3600,
         "pool_pre_ping": True,
     }
-    SECRET_KEY ="this-is-not-secret"
+    SECRET_KEY = "test-secret-key-do-not-use-in-production"
     TESTING = True
+    WTF_CSRF_ENABLED = False  # Deshabilitar CSRF para pruebas
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
     
