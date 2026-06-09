@@ -12,3 +12,15 @@ class Config:
         "pool_pre_ping": True,
     }
     SECRET_KEY ="this-is-not-secret"
+
+class TestConfig:
+    SQLALCHEMY_DATABASE_URI = "sqlite:///test_notes.db"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "connect_args": {"timeout": 15, "check_same_thread": False},
+        "pool_recycle": 3600,
+        "pool_pre_ping": True,
+    }
+    SECRET_KEY ="this-is-not-secret"
+    TESTING = True
+    
