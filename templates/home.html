@@ -35,9 +35,9 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for note in notes.items %}
         <div class="note-card bg-white shadow-lg rounded-lg p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1" data-note-id="{{ note.id }}">
-            <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ note.title }}</h2>
+            <h2 class="text-xl font-semibold text-gray-800 mb-2 truncate">{{ note.title }}</h2>
             <p class="text-sm text-gray-500 mb-3">Creado el {{ note.created_at.strftime('%d de %B') }}</p>
-            <p class="text-gray-700 mb-4">
+            <p class="text-gray-700 mb-4 break-words overflow-hidden line-clamp-3">
                 {{ note.content|striptags|truncate(140) }}
             </p>
             <div class="flex justify-end space-x-2">
