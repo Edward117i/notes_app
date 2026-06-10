@@ -70,6 +70,16 @@
             }
         });
 
+        // Modificar botón de imagen para solicitar URL en lugar de subir archivo local (evita Base64 gigante)
+        const toolbar = quill.getModule('toolbar');
+        toolbar.addHandler('image', function() {
+            const range = quill.getSelection();
+            const value = prompt('Introduce la URL de la imagen (ej: https://ejemplo.com/imagen.png):');
+            if (value) {
+                quill.insertEmbed(range.index, 'image', value, Quill.sources.USER);
+            }
+        });
+
         // Cargar el contenido HTML actual de la nota en el editor
         const rawContent = document.getElementById('raw-content').innerHTML;
         quill.clipboard.dangerouslyPasteHTML(rawContent);
