@@ -3,39 +3,149 @@
 {% block title %}Notas - Inicio{% endblock %}
 
 {% block content %}
-{% if notes %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {% for note in notes %}
-    <div class="bg-white shadow-lg rounded-lg p-5">
-        <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ note.title }}</h2>
-        <p class="text-sm text-gray-500 mb-3">Creado el {{ note.created_at.strftime('%d de %B') }}</p>
-        <p class="text-gray-700 mb-4">
-            {{ note.content[:140] }}{% if note.content|length > 140 %}...{% endif %}
-        </p>
-        <div class="flex justify-end space-x-2">
-            <a href="{{ url_for('notes.edit_note', id=note.id) }}"
-                class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600" title="Editar Nota">Ver Nota</a>
-            <form method="POST" action="{{ url_for('notes.delete_note', id=note.id) }}" id="deleteForm-{{ note.id }}">
-                <button type="button" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                    title="Eliminar Nota" onclick="openDeleteModal({{ note.id }})">Eliminar</button>
-            </form>
+
+<!-- Barra de búsqueda -->
+<div class="mb-6">
+    <div class="relative max-w-md">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+        <input type="text" id="searchInput" 
+            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            placeholder="Buscar notas por título o contenido...">
+        <div id="searchSpinner" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden">
+            <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
         </div>
     </div>
-    {% endfor %}
 </div>
-{% else %}
-<p class="text-gray-500">No hay notas disponibles. ¡Comienza creando una!</p>
-{% endif %}
+
+<!-- Contador de resultados -->
+<div id="resultsInfo" class="mb-4 text-sm text-gray-500 hidden">
+    <span id="resultsCount"></span> nota(s) encontrada(s)
+</div>
+
+<!-- Grid de notas -->
+<div id="notesGrid">
+    {% if notes.items %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for note in notes.items %}
+        <div class="note-card bg-white shadow-lg rounded-lg p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1" data-note-id="{{ note.id }}">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ note.title }}</h2>
+            <p class="text-sm text-gray-500 mb-3">Creado el {{ note.created_at.strftime('%d de %B') }}</p>
+            <p class="text-gray-700 mb-4">
+                {{ note.content|striptags|truncate(140) }}
+            </p>
+            <div class="flex justify-end space-x-2">
+                <a href="{{ url_for('notes.edit_note', id=note.id) }}"
+                    class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition" title="Editar Nota">Ver Nota</a>
+                <button type="button" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                    title="Eliminar Nota" onclick="openDeleteModal({{ note.id }})">Eliminar</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Controles de paginación -->
+    {% if notes.pages > 1 %}
+    <nav id="paginationControls" class="flex justify-center mt-8" aria-label="Paginación">
+        <ul class="flex items-center space-x-1">
+            <!-- Botón Anterior -->
+            {% if notes.has_prev %}
+            <li>
+                <a href="{{ url_for('notes.home', page=notes.prev_num) }}" 
+                   class="pagination-link px-3 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-500 hover:text-blue-600 transition-all duration-200"
+                   data-page="{{ notes.prev_num }}">
+                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Anterior
+                </a>
+            </li>
+            {% else %}
+            <li>
+                <span class="px-3 py-2 rounded-lg bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed">
+                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Anterior
+                </span>
+            </li>
+            {% endif %}
+
+            <!-- Números de página -->
+            {% for page_num in notes.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == notes.page %}
+                    <li>
+                        <span class="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold shadow-md">{{ page_num }}</span>
+                    </li>
+                    {% else %}
+                    <li>
+                        <a href="{{ url_for('notes.home', page=page_num) }}" 
+                           class="pagination-link px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-500 hover:text-blue-600 transition-all duration-200"
+                           data-page="{{ page_num }}">{{ page_num }}</a>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li>
+                    <span class="px-2 py-2 text-gray-400">…</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Botón Siguiente -->
+            {% if notes.has_next %}
+            <li>
+                <a href="{{ url_for('notes.home', page=notes.next_num) }}" 
+                   class="pagination-link px-3 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-500 hover:text-blue-600 transition-all duration-200"
+                   data-page="{{ notes.next_num }}">
+                    Siguiente
+                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </li>
+            {% else %}
+            <li>
+                <span class="px-3 py-2 rounded-lg bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed">
+                    Siguiente
+                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+    {% else %}
+    <div id="emptyState" class="text-center py-12">
+        <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <p class="text-gray-500 text-lg">No hay notas disponibles. ¡Comienza creando una!</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-3"></div>
 
 <!-- Modal de confirmación de eliminación -->
-<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+<div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-200">
+    <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4 transform transition-all duration-200 scale-95" id="deleteModalContent">
         <h3 class="text-lg font-bold text-gray-800 mb-2">Eliminar Nota</h3>
         <p class="text-gray-600 mb-6">¿Estás seguro de que quieres eliminar esta nota? Esta acción no se puede deshacer.</p>
         <div class="flex justify-end space-x-3">
             <button onclick="closeDeleteModal()" 
                 class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">Cancelar</button>
-            <button onclick="confirmDelete()" 
+            <button onclick="confirmDelete()" id="confirmDeleteBtn"
                 class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">Aceptar</button>
         </div>
     </div>
@@ -43,21 +153,251 @@
 
 <script>
     let currentDeleteId = null;
+    let searchTimeout = null;
 
+    // ========================
+    // Toast Notifications
+    // ========================
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        
+        const colors = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            warning: 'bg-yellow-500',
+            info: 'bg-blue-500'
+        };
+        
+        const icons = {
+            success: '✓',
+            error: '✕',
+            warning: '⚠',
+            info: 'ℹ'
+        };
+
+        toast.className = `${colors[type]} text-white px-5 py-3 rounded-lg shadow-lg flex items-center space-x-3 transform translate-x-full transition-transform duration-300`;
+        toast.innerHTML = `
+            <span class="text-lg font-bold">${icons[type]}</span>
+            <span class="font-medium">${message}</span>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Animar entrada
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-x-full');
+            toast.classList.add('translate-x-0');
+        });
+        
+        // Auto-remover después de 3 segundos
+        setTimeout(() => {
+            toast.classList.remove('translate-x-0');
+            toast.classList.add('translate-x-full');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ========================
+    // Delete Modal (AJAX)
+    // ========================
     function openDeleteModal(noteId) {
         currentDeleteId = noteId;
-        document.getElementById('deleteModal').classList.remove('hidden');
+        const modal = document.getElementById('deleteModal');
+        const content = document.getElementById('deleteModalContent');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
     }
 
     function closeDeleteModal() {
-        currentDeleteId = null;
-        document.getElementById('deleteModal').classList.add('hidden');
+        const content = document.getElementById('deleteModalContent');
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        setTimeout(() => {
+            currentDeleteId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        }, 200);
     }
 
     function confirmDelete() {
-        if (currentDeleteId !== null) {
-            document.getElementById('deleteForm-' + currentDeleteId).submit();
+        if (currentDeleteId === null) return;
+        
+        const btn = document.getElementById('confirmDeleteBtn');
+        btn.disabled = true;
+        btn.textContent = 'Eliminando...';
+        
+        fetch(`/eliminar-nota/${currentDeleteId}`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Animar y remover la tarjeta
+                const card = document.querySelector(`[data-note-id="${currentDeleteId}"]`);
+                if (card) {
+                    card.style.transition = 'all 0.4s ease-out';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.8) translateY(-20px)';
+                    setTimeout(() => {
+                        card.remove();
+                        // Verificar si quedan notas
+                        const remaining = document.querySelectorAll('.note-card');
+                        if (remaining.length === 0) {
+                            document.getElementById('notesGrid').innerHTML = `
+                                <div class="text-center py-12">
+                                    <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <p class="text-gray-500 text-lg">No hay notas disponibles. ¡Comienza creando una!</p>
+                                </div>`;
+                        }
+                    }, 400);
+                }
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message || 'Error al eliminar la nota', 'error');
+            }
+        })
+        .catch(() => {
+            showToast('Error de conexión al eliminar la nota', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Aceptar';
+            closeDeleteModal();
+        });
+    }
+
+    // ========================
+    // Búsqueda en Tiempo Real
+    // ========================
+    const searchInput = document.getElementById('searchInput');
+    const searchSpinner = document.getElementById('searchSpinner');
+    const resultsInfo = document.getElementById('resultsInfo');
+    const resultsCount = document.getElementById('resultsCount');
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length === 0) {
+            // Recargar la página sin filtro de búsqueda
+            resultsInfo.classList.add('hidden');
+            window.location.href = '/';
+            return;
         }
+
+        searchSpinner.classList.remove('hidden');
+        
+        // Debounce de 300ms
+        searchTimeout = setTimeout(() => {
+            fetchSearchResults(query);
+        }, 300);
+    });
+
+    function fetchSearchResults(query, page = 1) {
+        searchSpinner.classList.remove('hidden');
+        
+        fetch(`/buscar-notas?q=${encodeURIComponent(query)}&page=${page}`)
+            .then(response => response.json())
+            .then(data => {
+                searchSpinner.classList.add('hidden');
+                
+                if (data.status === 'success') {
+                    resultsCount.textContent = data.pagination.total;
+                    resultsInfo.classList.remove('hidden');
+                    renderNotes(data.data, data.pagination, query);
+                }
+            })
+            .catch(() => {
+                searchSpinner.classList.add('hidden');
+                showToast('Error al buscar notas', 'error');
+            });
+    }
+
+    function renderNotes(notes, pagination, searchQuery) {
+        const grid = document.getElementById('notesGrid');
+        
+        if (notes.length === 0) {
+            grid.innerHTML = `
+                <div class="text-center py-12">
+                    <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <p class="text-gray-500 text-lg">No se encontraron notas para "<strong>${escapeHtml(searchQuery)}</strong>"</p>
+                </div>`;
+            return;
+        }
+
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+        
+        notes.forEach(note => {
+            const content = note.content.length > 140 ? note.content.substring(0, 140) + '...' : note.content;
+            const date = new Date(note.created_at);
+            const dateStr = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long' });
+            
+            html += `
+                <div class="note-card bg-white shadow-lg rounded-lg p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1" data-note-id="${note.id}" style="animation: fadeIn 0.3s ease-out">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">${escapeHtml(note.title)}</h2>
+                    <p class="text-sm text-gray-500 mb-3">Creado el ${dateStr}</p>
+                    <p class="text-gray-700 mb-4">${escapeHtml(content)}</p>
+                    <div class="flex justify-end space-x-2">
+                        <a href="/editar-nota/${note.id}" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition" title="Editar Nota">Ver Nota</a>
+                        <button type="button" class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition" title="Eliminar Nota" onclick="openDeleteModal(${note.id})">Eliminar</button>
+                    </div>
+                </div>`;
+        });
+        
+        html += '</div>';
+        
+        // Paginación de búsqueda
+        if (pagination.pages > 1) {
+            html += renderSearchPagination(pagination, searchQuery);
+        }
+        
+        grid.innerHTML = html;
+    }
+
+    function renderSearchPagination(pagination, searchQuery) {
+        let html = '<nav class="flex justify-center mt-8"><ul class="flex items-center space-x-1">';
+        
+        // Botón Anterior
+        if (pagination.has_prev) {
+            html += `<li><button onclick="fetchSearchResults('${escapeHtml(searchQuery)}', ${pagination.page - 1})" class="px-3 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-500 hover:text-blue-600 transition-all duration-200">
+                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg> Anterior
+            </button></li>`;
+        }
+        
+        // Números de página
+        for (let i = 1; i <= pagination.pages; i++) {
+            if (i === pagination.page) {
+                html += `<li><span class="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold shadow-md">${i}</span></li>`;
+            } else {
+                html += `<li><button onclick="fetchSearchResults('${escapeHtml(searchQuery)}', ${i})" class="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-500 hover:text-blue-600 transition-all duration-200">${i}</button></li>`;
+            }
+        }
+        
+        // Botón Siguiente
+        if (pagination.has_next) {
+            html += `<li><button onclick="fetchSearchResults('${escapeHtml(searchQuery)}', ${pagination.page + 1})" class="px-3 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-500 hover:text-blue-600 transition-all duration-200">
+                Siguiente <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button></li>`;
+        }
+        
+        html += '</ul></nav>';
+        return html;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // Cerrar modal al presionar Escape
@@ -66,6 +406,20 @@
             closeDeleteModal();
         }
     });
+
+    // Cerrar modal al hacer click fuera
+    document.getElementById('deleteModal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeDeleteModal();
+        }
+    });
 </script>
+
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 
 {% endblock %}

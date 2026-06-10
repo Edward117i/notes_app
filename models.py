@@ -1,3 +1,4 @@
+import secrets
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -11,6 +12,16 @@ class Note(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.now())
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+    def to_dict(self):
+        """Serializa la nota a un diccionario para respuestas JSON"""
+        return {
+            'id': self.id,
+            'title': self.title,
+            'content': self.content,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'user_id': self.user_id
+        }
+
     def __repr__(self):
         return f"<Note {self.id}: {self.title}>"
 
@@ -19,6 +30,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    api_key = db.Column(db.String(64), unique=True, nullable=True)
     notes = db.relationship('Note', backref='author', lazy=True)
 
     def set_password(self, password):
@@ -28,6 +40,11 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Verifica si la contraseña es correcta"""
         return check_password_hash(self.password_hash, password)
+    
+    def generate_api_key(self):
+        """Genera un API key único para el usuario"""
+        self.api_key = secrets.token_hex(32)
+        return self.api_key
 
     def __repr__(self):
         return f"<User {self.id}: {self.username}>"

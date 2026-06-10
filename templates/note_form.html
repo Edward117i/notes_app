@@ -29,9 +29,12 @@
             <!-- Campo Contenido -->
             <div>
                 <label for="content" class="block text-sm font-semibold text-gray-700 mb-2">Contenido</label>
-                <textarea name="content" id="content" required rows="8"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Escribe el contenido de tu nota..."></textarea>
+                <!-- Input oculto para enviar el HTML al servidor -->
+                <input type="hidden" name="content" id="content-hidden" required>
+                <!-- Contenedor del editor Quill con altura mínima y estilo responsivo -->
+                <div class="border border-gray-300 rounded-lg overflow-hidden bg-white">
+                    <div id="editor-container" style="min-height: 250px; font-size: 16px;"></div>
+                </div>
             </div>
             
             <!-- Botón de envío -->
@@ -42,4 +45,43 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar Quill
+        const quill = new Quill('#editor-container', {
+            theme: 'snow',
+            placeholder: 'Escribe el contenido de tu nota...',
+            modules: {
+                toolbar: [
+                    [{ 'font': [] }, { 'size': [] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'script': 'sub'}, { 'script': 'super' }],
+                    [{ 'header': [1, 2, 3, false] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
+                    [{ 'direction': 'rtl' }, { 'align': [] }],
+                    ['link', 'image', 'video'],
+                    ['clean']
+                ]
+            }
+        });
+
+        // Copiar el contenido HTML del editor Quill al input oculto antes de enviar el formulario
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const contentHidden = document.getElementById('content-hidden');
+            // Obtener el HTML generado por Quill
+            const htmlContent = quill.getSemanticHTML();
+            
+            // Validar si el editor está vacío (Quill vacío contiene '<p><br></p>')
+            const textOnly = quill.getText().trim();
+            if (!textOnly) {
+                contentHidden.value = '';
+            } else {
+                contentHidden.value = htmlContent;
+            }
+        });
+    });
+</script>
 {% endblock %}

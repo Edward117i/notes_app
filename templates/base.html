@@ -7,6 +7,8 @@
     <title>{% block title %}Notas App{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Quill.js Editor Stylesheet -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -125,8 +127,10 @@
                 <a href="{{ url_for('auth.logout') }}"
                     class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition">Cerrar Sesión</a>
                 {% else %}
+                {% if request.endpoint not in ['auth.login', 'auth.register'] %}
                 <a href="{{ url_for('auth.login') }}"
                     class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">Iniciar Sesión</a>
+                {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -218,9 +222,15 @@
             }
         });
 
-        // Mostrar loader al enviar un formulario
+        // Mostrar loader al enviar un formulario (solo si es válido y no ha sido cancelado)
         document.addEventListener('submit', function(e) {
-            showLoader();
+            const form = e.target.closest('form');
+            if (form && form.checkValidity && !form.checkValidity()) {
+                return; // No mostrar loader si la validación HTML5 falla
+            }
+            if (!e.defaultPrevented) {
+                showLoader();
+            }
         });
 
         // Función para mostrar el loader
@@ -248,6 +258,8 @@
             showLoader();
         });
     </script>
+    <!-- Quill.js Editor Script -->
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 </body>
 
 </html>

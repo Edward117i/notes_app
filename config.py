@@ -12,6 +12,10 @@ class Config:
         "pool_pre_ping": True,
     }
     SECRET_KEY ="this-is-not-secret"
+    
+    # Configuración de caché
+    CACHE_TYPE = "SimpleCache"
+    CACHE_DEFAULT_TIMEOUT = 300
 
 class TestConfig:
     """Configuración para pruebas unitarias"""
@@ -26,4 +30,8 @@ class TestConfig:
     TESTING = True
     WTF_CSRF_ENABLED = False  # Deshabilitar CSRF para pruebas
     PRESERVE_CONTEXT_ON_EXCEPTION = False
+    
+    # Desactivar caché en tests
+    CACHE_TYPE = "NullCache"
+
     

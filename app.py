@@ -1,9 +1,13 @@
 from flask import Flask, request
 from flask_login import LoginManager
+from flask_caching import Cache
 from config import Config
 from models import db, User
 from notes.routes import notes_bp
 from auth.routes import auth_bd
+from api.routes import api_bp
+
+cache = Cache()
 
 
 def create_app(config_class=Config):
@@ -13,6 +17,9 @@ def create_app(config_class=Config):
     
     # Inicializar base de datos
     db.init_app(app)
+    
+    # Inicializar caché
+    cache.init_app(app)
     
     # Inicializar Flask-Login
     login_manager = LoginManager()
@@ -28,6 +35,7 @@ def create_app(config_class=Config):
     # Registrar Blueprints
     app.register_blueprint(notes_bp)
     app.register_blueprint(auth_bd)
+    app.register_blueprint(api_bp)
     
     # Registrar rutas
     @app.route("/acerca-de")
