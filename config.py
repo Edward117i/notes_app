@@ -4,14 +4,25 @@ DB_FILE_PATH = os.path.join(os.path.dirname(__file__), "notes.sqlite")
 
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{DB_FILE_PATH}"
+    # Lee DATABASE_URL si está definida (ej. PostgreSQL en Render), de lo contrario usa SQLite local
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", f"sqlite:///{DB_FILE_PATH}")
+    
+    # Si la base de datos es PostgreSQL, no usar connect_args específicos de SQLite
+    if SQLALCHEMY_DATABASE_URI.startswith("sqlite"):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "connect_args": {"timeout": 15, "check_same_thread": False},
+            "pool_recycle": 3600,
+            "pool_pre_ping": True,
+        }
+    else:
+        # Configuración por defecto para PostgreSQL
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_recycle": 3600,
+            "pool_pre_ping": True,
+        }
+        
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "connect_args": {"timeout": 15, "check_same_thread": False},
-        "pool_recycle": 3600,
-        "pool_pre_ping": True,
-    }
-    SECRET_KEY ="this-is-not-secret"
+    SECRET_KEY = os.environ.get("SECRET_KEY", "this-is-not-secret")
     
     # Configuración de caché
     CACHE_TYPE = "SimpleCache"
